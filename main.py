@@ -60,41 +60,66 @@ class Bird(Image):
 class Dino(Widget):
     velocity_x = BoundedNumericProperty(0, min=-10, max=10)
     velocity_y = BoundedNumericProperty(0, min=-10, max=10)
-    ground_pos = ListProperty([0, 0])
+    ground_pos = NumericProperty(0)
+    acceleration_y = NumericProperty(0)
+    jumping = NumericProperty(0)
+    
+    def set_dino_image(self, image_path):
+        self.ids.dino_image.source = image_path
 
     def move(self):
         self.pos = Vector(self.velocity_x, self.velocity_y) + self.pos
 
-        if self.pos[1] < self.ground_pos[1]:
-            self.pos[1] = self.ground_pos[1]
-            self.velocity_y = 0
+        if self.pos[1] < self.ground_pos:
+            self.pos [1]= self.ground_pos
+            self.velocity_y < 0
 
-    def jump(self):
-        print("Jumping...")
-        if self.pos[1] == self.ground_pos[1]:
-            self.velocity_y = 10  # Ajuste conforme necessário para a altura do pulo
-            Clock.schedule_once(self.reset_jump_velocity, 0.2)
+    def update(self, dt):
+        self.velocity_y += self.acceleration_y * dt
+        self.y += self.velocity_y * dt
+
+        if self.y < self.ground_pos:
+            self.y = self.ground_pos
+            self.velocity_y = 0
+            self.jumping = 0
+
+    def jump(self, jump_height):
+        if self.jumping == 0:
+            self.jumping = 1
+            self.acceleration_y = 1000  # Ajuste conforme necessário para a altura do pulo
+            Clock.schedule_once(self.reset_jump, 0.2)
+
+    def reset_jump(self, dt):
+        self.acceleration_y = -1000
     
+    def update_image(self):
+        if self.jumping:
+            self.ids.dino_image.source = 'imagens/DinoJump.png'
+        else:
+            self.ids.dino_image.source = self.image_paths[self.current_index]
+
     def update_jump(self, dt):
         self.move()
-            
+        self.update_image()
 
-    def stop_jump(self, dt):
-        self.velocity_y = 0
+
+
 
 
 # Classe do Jogo
 class RunDinoGame(Widget):
+
     bird_image_paths = ['imagens/Bird1.png', 'imagens/Bird2.png']
     cactus_image_paths = ['imagens/LargeCactus1.png', 'imagens/LargeCactus2.png', 'imagens/LargeCactus3.png',
                           'imagens/SmallCactus1.png', 'imagens/SmallCactus2.png', 'imagens/SmallCactus3.png']
+    cloud_image_path = 'imagens/Nuvem.png'
+    ground_image_path = 'imagens/solo.png'
+    dino_image_paths = ['imagens/DinoRun1.png', 'imagens/DinoRun2.png']
 
     birds = ListProperty([])
     cacti = ListProperty([])
-    cloud_image_path = 'imagens/Nuvem.png'
     clouds = ListProperty([])
-    ground_image_path = 'imagens/solo.png'
-    dino_image_paths = ['imagens/DinoRun1.png', 'imagens/DinoRun2.png']
+
     current_dino_index = 0
     ground_speed = 4 #velocidade do solo
     dino = ObjectProperty(None)
@@ -105,31 +130,30 @@ class RunDinoGame(Widget):
         super(RunDinoGame, self).__init__(**kwargs)
         self.ground_pos = [0, 0]
         self.obstacles = []
+        self.current_bird_index = 0
+        self.dino = Dino()
+        self.dino.y = self.dino.ground_pos
+
         Clock.schedule_interval(self.update, 1.0 / 60.0)
         Clock.schedule_interval(self.change_dino_image, 0.175)        
-        Clock.schedule_interval(self.spawn_clouds, 0.5) #o tempo que as nuvens vão aparecer 
+        Clock.schedule_interval(self.spawn_clouds, 0.5) 
         Clock.schedule_interval(self.spawn_obstacle, 1.5)
         Clock.schedule_interval(self.animate_birds, 0.2)  
-        self.ground_pos = [0, 0]  # Adicione esta linha para inicializar a posição do solo
 
-        self._keyboard = Window.request_keyboard(self._keyboard_closed, self)
-        self._keyboard.bind(on_key_down=self._on_keyboard_down)
-        self.current_bird_index = 0
+    def on_key_down(self, keyboard, keycode, text, modifiers):
+        if keycode[1] == 273:
+            self.dino.jump(jump_height=300)
+
+    def on_touch_down(self, touch):
+        if touch.y > self.height * 0.75:  
+            self.dino.jump(jump_height=300)
     
-    def _on_keyboard_up(self, keyboard, keycode, *args):
-        if keycode[1] == 'up':
-            self.dino.velocity_y = 0
+    def update(self, dt):
+        self.dino.update(dt)
 
-    def _keyboard_closed(self):
-        self._keyboard.unbind(on_key_down=self._on_keyboard_down)
-        self._keyboard.unbind(on_key_up=self._on_keyboard_up)
-        self._keyboard = None
+    def on_touch_down(self, touch):
+        self.dino.jump(jump_height=300)
 
-
-    def _on_keyboard_down(self, keyboard, keycode, text, modifiers):
-        print(f"Key pressed: {keycode}, Dino position: {self.dino.pos}, Ground position: {self.ground_pos}")
-        if keycode[1] == 'up' and self.dino.pos[1] == self.ground_pos[1]:
-            self.dino.jump()
 
     def spawn_clouds(self, dt):
            if all(cloud.x < 0 for cloud in self.clouds):
@@ -205,15 +229,11 @@ class RunDinoGame(Widget):
 
         self.adjust_obstacle_distance(self.cacti, dt)    
 
-    def on_touch_down(self, touch):
-        self.dino.jump()
-
     def update(self, dt):
         self.ground_pos[0] -= self.ground_speed
         if self.ground_pos[0] <= -self.width:
             self.ground_pos[0] = 0
         self.dino.move()
-        self.dino.update_jump(dt)
         for cloud in self.clouds:
             cloud.move()
         # Atualiza os pássaros
@@ -239,20 +259,16 @@ class RunDinoGame(Widget):
         self.adjust_obstacle_distance(self.birds, dt)
 
     def change_dino_image(self, dt):
-        # Atualiza o caminho da imagem
+    
         self.ids.dino_image.source = self.dino_image_paths[self.current_dino_index]
-
-        # Avança para a próxima imagem na lista
         self.current_dino_index = (self.current_dino_index + 1) % len(self.dino_image_paths)
-    def update_jump(self, dt):
-        self.dino.update_jump(dt)
+    
 
 # Classe do Aplicativo
 class RunDinoApp(App):
     def build(self):
         game = RunDinoGame()
         game.dino = Dino()
-        Clock.schedule_interval(game.update_jump, 1.0 / 60.0)  # Chama update_jump a cada quadro
         return game
 
 if __name__ == '__main__':
