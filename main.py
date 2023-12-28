@@ -35,10 +35,17 @@ kv_string = '''
 
     Button:
         size_hint: None, None
-        size: 100, 82
+        size: 100, 50
+        pos: root.width - self.width - 80, 40
+        background_normal: 'imagens/seta1.png'  
+        on_press: root.dino_jump('up')
+
+    Button:
+        size_hint: None, None
+        size: 100, 50
         pos: root.width - self.width - 80, 140
-        background_normal: 'imagens/seta.png'  
-        on_press: root.dino_jump()
+        background_normal: 'imagens/seta2.png'  
+        on_press: root.dino_jump('up_right')
 '''
 
 
@@ -71,6 +78,7 @@ class Bird(Image):
 
 class JumpArrow(Widget, ButtonBehavior):
     pass
+
 # Classe do Dinossauro
 class Dino(Widget):
     jump_image_paths = ['imagens/DinoJump.png']
@@ -170,14 +178,12 @@ class RunDinoGame(Widget):
         for bird in self.birds:
             bird.source = self.bird_image_paths[self.current_bird_index]
 
-        # Avança para a próxima imagem na lista
         self.current_bird_index = (self.current_bird_index + 1) % len(self.bird_image_paths)
     
     def spawn_cacti(self, dt):
         cactus = Cactus(source=random.choice(self.cactus_image_paths))
         cactus.velocity_x = self.ground_speed
 
-        # Garante uma distância mínima entre diferentes tipos de obstáculos
         min_distance_between_obstacles = 600
 
         last_obstacle = None
@@ -230,23 +236,26 @@ class RunDinoGame(Widget):
     def change_dino_image(self, dt):
         self.ids.dino_image.source = self.dino_image_paths[self.current_dino_index]
         self.current_dino_index = (self.current_dino_index + 1) % len(self.dino_image_paths)
-    
-    def dino_jump(self):
+        
+    def dino_jump(self, direction):
         if self.dino.y == self.dino.ground_pos:
-            # Animação para o salto do dinossauro
-            jump_animation = Animation(y=self.dino.ground_pos + 100, duration=0.5) + Animation(y=self.dino.ground_pos, duration=0.5)
-            jump_animation.start(self.dino)
-            self.dino.velocity_y = JUMP_VEL
+            if direction == 'up':
+                self.dino.y += 100 
+                self.dino.velocity_y = JUMP_VEL
+            elif direction == 'down':
+                self.dino.y -= 50  
+                self.dino.velocity_y = 0
+
+
     
 
 # Classe do Aplicativo
 class RunDinoApp(App):
     def build(self):
         game = RunDinoGame()
-        game.dino = Dino()
         return game
 
 if __name__ == '__main__':
     RunDinoApp().run()
- 
+
  
