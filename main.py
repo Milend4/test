@@ -73,7 +73,7 @@ class Cactos(Image):
     def move(self):
         self.x -= self.velocidade_x
 
-class Cloud(Image):
+class Nuvens(Image):
     velocidade_x = NumericProperty(0)
 
     def move(self):
@@ -87,9 +87,9 @@ class Passaro(Image):
 
 # Classe do Dinossauro
 class Dino(Image):
-    dino_image_paths = ['imagens/DinoRun1.png', 'imagens/DinoRun2.png']
-    jump_image_paths = ['imagens/DinoJump.png']
-    duck_image_paths = ['imagens/DinoDuck1.png', 'DinoDuck2.png']
+    dino_imagem_pasta = ['imagens/DinoRun1.png', 'imagens/DinoRun2.png']
+    jump_imagem_pasta = ['imagens/DinoJump.png']
+    duck_imagem_pasta = ['imagens/DinoDuck1.png', 'DinoDuck2.png']
     velocidade_x = 0
     velocidade_y = 0
     dino_index = 0
@@ -130,16 +130,14 @@ class Dino(Image):
             self.step_index = 0
 
     def run(self, dt):
-        print("Running animation") 
-        self.ids.dino_image.source = self.dino_image_paths[self.dino_index]
-        self.dino_index = (self.dino_index + 1) % len(self.dino_image_paths)
+        self.ids.dino_image.source = self.dino_imagem_pasta[self.dino_index]
+        self.dino_index = (self.dino_index + 1) % len(self.dino_imagem_pasta)
 
 
     def jump(self, direction):
-        self.update(direction)
         if self.y == self.solo_pos:
-            jump_image = 'imagens/DinoJump.png'  # ou a imagem desejada
-            jump = Jump(source=jump_image)
+            jump_imagem = 'imagens/DinoJump.png'
+            jump = Jump(source=jump_imagem)
             jump.velocidade_x = JUMP_VEL
             jump.pos = (self.width / 2, self.solo_pos[1])
             self.add_widget(jump)
@@ -148,8 +146,8 @@ class Dino(Image):
 
     def duck(self):
         if self.y == self.solo_pos:
-            duck_image = random.choice(self.duck_image_paths)
-            duck = Duck(source=duck_image)
+            duck_imagem = random.choice(self.duck_imagem_pasta)
+            duck = Duck(source=duck_imagem)
             self.y -= 50
             self.velocidade_y = 0
 
@@ -158,11 +156,11 @@ class Dino(Image):
 # Classe do Jogo
 class RunDinoGame(Widget):
 
-    passaro_image_paths = ['imagens/Bird1.png', 'imagens/Bird2.png']
-    cactus_image_paths = ['imagens/LargeCactus1.png', 'imagens/LargeCactus2.png', 'imagens/LargeCactus3.png',
+    passaro_imagem_pasta = ['imagens/Bird1.png', 'imagens/Bird2.png']
+    cactus_imagem_pasta = ['imagens/LargeCactus1.png', 'imagens/LargeCactus2.png', 'imagens/LargeCactus3.png',
                           'imagens/SmallCactus1.png', 'imagens/SmallCactus2.png', 'imagens/SmallCactus3.png']
-    cloud_image_path = 'imagens/Nuvem.png'
-    solo_image_path = 'imagens/solo.png'
+    nuvens_imagem_pasta = 'imagens/Nuvem.png'
+    solo_imagem_pasta = 'imagens/solo.png'
 
 
     passaro = ListProperty([])
@@ -172,9 +170,6 @@ class RunDinoGame(Widget):
     dino_index = 0
     solo_speed = 4 #velocidade do solo
     solo_pos = ListProperty([0, 0])
-
-
-    
 
     def __init__(self, **kwargs):
         super(RunDinoGame, self).__init__(**kwargs)
@@ -186,19 +181,19 @@ class RunDinoGame(Widget):
 
         Clock.schedule_interval(self.update, 1.0 / 60.0)  
         Clock.schedule_interval(self.update_game, 1.0 / 60.0)      
-        Clock.schedule_interval(self.spawn_clouds, 0.5) 
+        Clock.schedule_interval(self.nuvens, 0.5) 
         Clock.schedule_interval(self.spawn_obstacle, 2.0)
         Clock.schedule_interval(self.animate_passaro, 0.2)  
     
     def update(self, dt):
         self.dino.update(dt)
 
-    def spawn_clouds(self, dt):
+    def nuvens(self, dt):
            if all(cloud.x < 0 for cloud in self.clouds):
 
-               num_clouds = random.randint(1, 4)
-               for _ in range(num_clouds):
-                   cloud = Cloud(source=self.cloud_image_path)
+               num_nuvens = random.randint(1, 4)
+               for _ in range(num_nuvens):
+                   cloud = Nuvens(source=self.nuvens_imagem_pasta)
                    cloud.pos = (random.randint(0, self.width), random.randint(self.height // 2, self.height))
                    cloud.velocidade_x = random.uniform(1, 4)  # Velocidade horizontal aleatória
                    self.clouds.append(cloud)
@@ -217,7 +212,7 @@ class RunDinoGame(Widget):
                 obstacles[-1].x = last_obstacle.x + min_distance_between_obstacles
     
     def spawn_passaro(self, dt):
-        passaro = Passaro(source=self.passaro_image_paths[self.passaro_index])
+        passaro = Passaro(source=self.passaro_imagem_pasta[self.passaro_index])
         passaro.velocidade_x = self.solo_speed
         min_distance_between_obstacles = 1300
 
@@ -237,12 +232,12 @@ class RunDinoGame(Widget):
     def animate_passaro(self, dt):
         # Atualiza o caminho da imagem dos pássaros
         for passaro in self.passaro:
-            passaro.source = self.passaro_image_paths[self.passaro_index]
+            passaro.source = self.passaro_imagem_pasta[self.passaro_index]
 
-        self.passaro_index = (self.passaro_index + 1) % len(self.passaro_image_paths)
+        self.passaro_index = (self.passaro_index + 1) % len(self.passaro_imagem_pasta)
     
     def spawn_cacti(self, dt):
-        cactus = Cactos(source=random.choice(self.cactus_image_paths))
+        cactus = Cactos(source=random.choice(self.cactus_imagem_pasta))
         cactus.velocidade_x = self.solo_speed
 
         min_distance_between_obstacles = 600
@@ -271,6 +266,7 @@ class RunDinoGame(Widget):
         # Atualiza o dinossauro e a animação apenas se não estiver pulando
         if self.dino.velocidade_y == 0:
             self.dino.move()
+            self.dino.update(dt)
             self.dino.run(dt) 
 
         # Atualiza as nuvens
@@ -295,13 +291,11 @@ class RunDinoGame(Widget):
         self.adjust_obstacle_distance(self.passaro, dt)
 
     def on_up_press(self):
-        if self.dino.dino_jump('up'):
+        if self.dino.dino_jump():
             self.dino_jump = True
-
-        
-
+    
     def on_down_press(self):
-        if self.dino.dino_jump('down'):
+        if self.dino.dino_jump():
             self.dino_duck = True
 
 
